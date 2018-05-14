@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# !/usr/bin/python
 
 # Note: requires the tqdm package (pip install tqdm)
 
@@ -16,10 +15,16 @@ import sys, os, multiprocessing, csv
 from urllib import request, error
 from PIL import Image
 from io import BytesIO
+import tqdm
+
+TARGET_SIZE = 224  # image resolution to be stored
+IMG_QUALITY = 90  # JPG quality
+NUM_WORKERS = 8  # Num of CPUs
 
 
 def parse_data(data_file):
     csvfile = open(data_file, 'r')
+
     csvreader = csv.reader(csvfile)
     key_url_list = [line[:2] for line in csvreader]
     return key_url_list[1:]  # Chop off header
@@ -54,11 +59,17 @@ def download_image(key_url):
         return 1
 
     try:
-        pil_image_rgb.save(filename, format='JPEG', quality=90)
+        pil_image_resize = pil_image_rgb.resize((TARGET_SIZE, TARGET_SIZE))
+    except:
+        print('Warning: Failed to resize image {}'.format(key))
+        return 1
+
+    try:
+        pil_image_resize.save(filename, format='JPEG', quality=IMG_QUALITY)
     except:
         print('Warning: Failed to save image {}'.format(filename))
         return 1
-    
+
     return 0
 
 
@@ -72,13 +83,14 @@ def loader():
         os.mkdir(out_dir)
 
     key_url_list = parse_data(data_file)
-    pool = multiprocessing.Pool(processes=20)  # Num of CPUs
+    pool = multiprocessing.Pool(processes=NUM_WORKERS)  # Num of CPUs
     failures = sum(tqdm.tqdm(pool.imap_unordered(download_image, key_url_list), total=len(key_url_list)))
     print('Total number of download failures:', failures)
     pool.close()
     pool.terminate()
 
 
+# Usage: python script.py CSV-files/train.csv Images
 # arg1 : data_file.csv
 # arg2 : output_dir
 if __name__ == '__main__':
