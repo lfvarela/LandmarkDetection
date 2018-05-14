@@ -17,7 +17,7 @@ from PIL import Image
 from io import BytesIO
 import tqdm
 
-TARGET_SIZE = 224  # image resolution to be stored
+TARGET_SIZE = 250  # image resolution to be stored
 IMG_QUALITY = 90  # JPG quality
 NUM_WORKERS = 8  # Num of CPUs
 
@@ -59,7 +59,15 @@ def download_image(key_url):
         return 1
 
     try:
-        pil_image_resize = pil_image_rgb.resize((TARGET_SIZE, TARGET_SIZE))
+        w, h = pil_image_rgb.size
+        s = min(w, h)
+        pil_image_crop = pil_image_rgb.crop((w//2 - s//2, h//2 - s//2, w//2 + s//2, h//2 + s//2))
+    except:
+        print('Warning: Failed to crop image {}'.format(key))
+        return 1
+
+    try:
+        pil_image_resize = pil_image_crop.resize((TARGET_SIZE, TARGET_SIZE))
     except:
         print('Warning: Failed to resize image {}'.format(key))
         return 1
