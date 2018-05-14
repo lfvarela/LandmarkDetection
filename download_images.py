@@ -18,7 +18,7 @@ from io import BytesIO
 import tqdm
 
 TARGET_SIZE = 250  # image resolution to be stored
-IMG_QUALITY = 90  # JPG quality
+IMG_QUALITY = 90  # JPEG quality
 NUM_WORKERS = 8  # Num of CPUs
 
 
@@ -98,7 +98,7 @@ def loader():
     pool.terminate()
 
 
-# Usage: python script.py CSV-files/train.csv Images
+# Usage: python download_images.py CSV-files/train.csv Images
 # arg1 : data_file.csv
 # arg2 : output_dir
 if __name__ == '__main__':
