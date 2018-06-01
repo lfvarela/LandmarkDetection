@@ -18,7 +18,7 @@ from io import BytesIO
 import tqdm
 
 TARGET_SIZE = 250  # image resolution to be stored
-IMG_QUALITY = 90  # JPEG quality
+IMG_QUALITY = 75  # JPEG quality
 NUM_WORKERS = 8  # Num of CPUs
 
 
@@ -91,6 +91,7 @@ def loader():
         os.mkdir(out_dir)
 
     key_url_list = parse_data(data_file)
+    print(key_url_list[0])
     pool = multiprocessing.Pool(processes=NUM_WORKERS)  # Num of CPUs
     failures = sum(tqdm.tqdm(pool.imap_unordered(download_image, key_url_list), total=len(key_url_list)))
     print('Total number of download failures:', failures)
