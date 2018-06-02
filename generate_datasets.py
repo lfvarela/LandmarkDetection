@@ -14,13 +14,13 @@ import traceback
 from PIL import Image
 import threading
 
-
 CSV_FILE = 'CSV-files/train.csv'
-OUTDIR = 'TrainDatasets/'
+TEMP = 'Temp/'
 IMAGES = 'Images/'
 DATASET_DIR = 'Train' # Dont add the '/'
-NUM_DATASETS = 5
-NUM_WORKERS = 4
+OUTDIR = 'TrainDatasets/'
+NUM_DATASETS = 2 # TODO: Change to 5
+NUM_WORKERS = 4 # Change to 24
 NEW_H = 224
 NEW_W = 224
 
@@ -31,6 +31,7 @@ class Loader():
         self.train_data = None  # TODO delete
         self.total_labels = None
         self.datasets = None
+        self.label_to_index_dict = {}
 
     def load_lid_to_imgs(self):
         '''
@@ -92,6 +93,7 @@ class Loader():
             else:
                 label = 'downsample'
             labels_tuples.append((index, l_id, l_id_count, label))
+            self.label_to_index_dict[l_id] = index
         return labels_tuples
 
 
@@ -99,6 +101,8 @@ class Loader():
         '''
         Transforms images and adds them to corresponding directories.
         '''
+        img_num = 0
+        index = self.label_to_index_dict[l_id]
         for img_id in self.lid_to_imgs[l_id]:
             img_file = os.path.join(IMAGES, '{}.jpg'.format(img_id))
             with Image.open(img_file) as img:
@@ -119,15 +123,10 @@ class Loader():
                             new_img = new_img.crop((x,y, x+NEW_W, y+NEW_H))
                         elif t == 'f':
                             new_img = new_img.transpose(Image.FLIP_LEFT_RIGHT)
-                    new_img = new_img.resize((NEW_W, NEW_H))
+                    new_img = new_img.resize((NEW_W, NEW_H)).convert(mode='RGB')
                     for i in range(NUM_DATASETS):
-                        new_file_name = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, transformations))
-                        new_img.save(new_file_name, format='JPEG')
-
-        for i in range(NUM_DATASETS):
-            new_imgs = os.listdir(os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id)))
-            assert(len(new_imgs) == 60)
-
+                        self.datasets[i][index, img_num, :] = np.array(new_img)
+                    img_num += 1
 
     def upsample_1_to_60(self, l_id):
         '''
@@ -139,44 +138,57 @@ class Loader():
         img_id = self.lid_to_imgs[l_id][0]
         img_file = os.path.join(IMAGES, '{}.jpg'.format(img_id))
 
+
+        img_num = 0 # Goes up to 60
+        index = self.label_to_index_dict[l_id]
+
         try:
             if os.path.isfile(img_file):
+
+                os.mkdir(os.path.join(TEMP, l_id))
 
                 # Transpose
                 with Image.open(img_file) as img:
                     transpose = img.transpose(Image.FLIP_LEFT_RIGHT)
+                    new_file_name = os.path.join(TEMP,l_id,'{}_{}.jpg'.format(img_id, ''))
+                    new_file_name_t = os.path.join(TEMP, l_id,'{}_{}.jpg'.format(img_id, 't'))
+                    img.save(new_file_name, format='JPEG')
+                    transpose.save(new_file_name_t, format='JPEG')
                     for i in range(NUM_DATASETS):
-                        new_file_name = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, ''))
-                        img.save(new_file_name, format='JPEG')
-                        new_file_name_t = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, 't'))
-                        transpose.save(new_file_name_t, format='JPEG')
+                        self.datasets[i][index, img_num, :] = np.array(img.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                        self.datasets[i][index, img_num+1, :] = np.array(transpose.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                    img_num += 2
 
                 # Dim/Bright
-                class_dir = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id))
+                class_dir = os.path.join(TEMP,l_id)
                 new_imgs = os.listdir(class_dir)
                 for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                    img_file_path = os.path.join(TEMP, l_id,img_file)
                     with Image.open(img_file_path) as img:
                         dim = img.point(lambda p: p * 0.7)
                         brighten = img.point(lambda p: p * 1.3)
+                        new_file_name_d = os.path.join(TEMP, l_id, '{}{}.jpg'.format(img_file[:-4], 'd'))
+                        new_file_name_b = os.path.join(TEMP,l_id, '{}{}.jpg'.format(img_file[:-4], 'b'))
+                        dim.save(new_file_name_d, format='JPEG')
+                        brighten.save(new_file_name_b, format='JPEG')
                         for i in range(NUM_DATASETS):
-                            new_file_name_d = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'd'))
-                            new_file_name_b = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'b'))
-                            dim.save(new_file_name_d, format='JPEG')
-                            dim.save(new_file_name_b, format='JPEG')
+                            self.datasets[i][index, img_num, :] = np.array(dim.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                            self.datasets[i][index, img_num+1, :] = np.array(brighten.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                        img_num += 2
 
                 new_imgs = os.listdir(class_dir)
                 for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                    img_file_path = os.path.join(TEMP, l_id,img_file)
                     with Image.open(img_file_path) as img:
                         grey = img.convert('L')
+                        new_file_name_g = os.path.join(TEMP,l_id, '{}{}.jpg'.format(img_file[:-4], 'g'))
                         for i in range(NUM_DATASETS):
-                            new_file_name_g = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'g'))
-                            grey.save(new_file_name_g, format='JPEG')
+                            self.datasets[i][index, img_num, :] = np.array(grey.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                        img_num += 1
 
                 new_imgs = os.listdir(class_dir)
                 for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                    img_file_path = os.path.join(TEMP, l_id,img_file)
                     with Image.open(img_file_path) as img:
                         w, h = img.size
                         for j in range(4):
@@ -184,13 +196,15 @@ class Loader():
                             y = random.randint(0, h-NEW_H-1)
                             crop = img.crop((x,y, x+NEW_W, y+NEW_H))
                             for i in range(NUM_DATASETS):
-                                new_file_name_c = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}{}.jpg'.format(img_file[:-4], 'c', str(j)))
-                                crop.save(new_file_name_c, format='JPEG')
+                                self.datasets[i][index, img_num, :] = np.array(crop.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                            img_num += 1
 
-                new_imgs = os.listdir(class_dir)
-                assert(len(new_imgs) == 60)
+                fileList = os.listdir(os.path.join(TEMP, l_id))
+                for fileName in fileList:
+                    os.remove(os.path.join(TEMP,l_id, fileName))
+                os.rmdir(os.path.join(TEMP, l_id))
+
             else:
-                #print('does not exists')
                 return
         except Exception as e:
             print('Error with PIL')
@@ -223,26 +237,17 @@ class Loader():
 
             (index, l_id, lid_count, label) = img_label
 
-            # Create directories for all the labels in each dataset.
-            for i in range(NUM_DATASETS):
-                labels_dir = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id))
-                if not os.path.exists(labels_dir):
-                    os.mkdir(labels_dir)
-
             # For downsampling: for every dataset, sample 60 random images that have the label l_id
             if label == 'downsample':
+                index = self.label_to_index_dict[l_id]
                 for i in range(NUM_DATASETS):
                     downsamples = np.random.choice(self.lid_to_imgs[l_id], 60, replace=False)
-                    for img_id in downsamples:
+                    for img_num, img_id in enumerate(downsamples):
                         img_file_path = os.path.join(IMAGES, '{}.jpg'.format(img_id))
                         with Image.open(img_file_path) as img:
-                            new_img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}.jpg'.format(img_id))
-                            img.save(new_img_file_path, format='JPEG')
-                    new_imgs = os.listdir(os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id)))
-                    assert(len(new_imgs) == 60)
+                            self.datasets[i][index, img_num, :] = np.array(img.resize((NEW_W, NEW_H)).convert(mode='RGB'))
 
             elif label == 'upsample_0':   # flip (x2), dim/bright (x3), color-transform (x2), 4-crops (x5), total: x60
-                return
                 self.upsample_1_to_60(l_id)
             else:
                 lower_q = lid_count - 60 % lid_count
@@ -284,6 +289,9 @@ class Loader():
 
     def process_labels_threaded(self, labels):
 
+        if not os.path.exists(TEMP):
+            os.mkdir(TEMP)
+
         def thread_target(t_id):
             global c
             global num_done
@@ -313,39 +321,24 @@ class Loader():
         global num_done
         num_done = 0
         for t_id, t in enumerate(threads):
-            print('Thread {} started!'.format(str(t_id)))
             t.start()
 
-        print('ACQUIRED')
+        # Wait for threads to be done
         c.wait()
-        print('AFTER WAIT')
-
         c.release()
-        print('RELEASED')
-
         for t_id, t in enumerate(threads):
             threads[t_id].join()
-            print('Thread {} joined!'.format(str(t_id)))
 
         print('DONE')
 
 
     def run(self):
 
-        # Make relevant directories
-        if not os.path.exists(OUTDIR):
-            os.mkdir(OUTDIR)
-        for i in range(NUM_DATASETS):
-            dataset_dir = os.path.join(OUTDIR, DATASET_DIR + str(i))
-            if not os.path.exists(dataset_dir):
-                os.mkdir(dataset_dir)
-
-
         labels = self.get_labels(CSV_FILE)  # Produce labels. maps { l_id: label_of(l_id) }
         self.total_labels = len(labels)
         print('num labels: {}'.format(self.total_labels))
 
-        self.datasets = [ np.zeros((self.total_labels, 60, NEW_H, NEW_W, 3)) ]
+        self.datasets = [ np.zeros((self.total_labels, 60, NEW_H, NEW_W, 3), dtype=np.uint8)] * NUM_DATASETS
 
         # Load pickle file: lid_to_imgs (maps { l_lid to list of images with that label }
         self.load_lid_to_imgs()
@@ -353,15 +346,32 @@ class Loader():
         # Load
         self.process_labels_threaded(labels)
 
+        if not os.path.exists(OUTDIR):
+            os.mkdir(OUTDIR)
+
+        self.classes = np.zeros(self.total_labels*60, dtype=np.int64))
+        for l_id, index in self.label_to_index_dict.items():
+            self.classes[index] = l_id
+        self.classes =  np.outer(self.classes, np.ones(60)).reshape(len(self.classes)*60) # shape (N), each one represents the class for img n.
+        np.save(os.path.join(OUTDIR, 'classes.npy'), self.classes)
+
+        try:
+
+            for i in range(NUM_DATASETS):
+                self.datasets[i] = self.datasets[i].reshape((self.total_labels*60, NEW_H, NEW_W, 3))
+                np.save(os.path.join(OUTDIR, 'train{}.npy'.format(i)), self.datasets[i])
+
+        except Exception as e:
+            print('Unable to process l_id: {}, label: {}. Error: {}'.format(l_id, label, e))
+            print(traceback.format_exc())
+            return 1
+
+
 
 def main():
     loader = Loader()
     loader.run()
 
-
-    self.datasets = self.datasets.reshape((self.total_labels*60, NEW_H, NEW_W, 3))
-
-    # TODO: save as numpy array.
 
 if __name__ == '__main__':
     main()
