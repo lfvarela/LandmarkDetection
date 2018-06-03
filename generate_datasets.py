@@ -101,10 +101,12 @@ class Loader():
         '''
         Transforms images and adds them to corresponding directories.
         '''
-        img_num = 0
         index = self.label_to_index_dict[l_id]
+        img_num = 0
+
         for img_id in self.lid_to_imgs[l_id]:
             img_file = os.path.join(IMAGES, '{}.jpg'.format(img_id))
+
             with Image.open(img_file) as img:
                 for transformations in id_to_transformations[img_id]: # id_to_transformations[img_id] is a list like ['c', 'cd']
                     new_img = img
@@ -127,6 +129,7 @@ class Loader():
                     for i in range(NUM_DATASETS):
                         self.datasets[i][index, img_num, :] = np.array(new_img)
                     img_num += 1
+        print(img_num)
 
     def upsample_1_to_60(self, l_id):
         '''
@@ -204,6 +207,8 @@ class Loader():
                     os.remove(os.path.join(TEMP,l_id, fileName))
                 os.rmdir(os.path.join(TEMP, l_id))
 
+                print(img_num)
+
             else:
                 return
         except Exception as e:
@@ -246,6 +251,7 @@ class Loader():
                         img_file_path = os.path.join(IMAGES, '{}.jpg'.format(img_id))
                         with Image.open(img_file_path) as img:
                             self.datasets[i][index, img_num, :] = np.array(img.resize((NEW_W, NEW_H)).convert(mode='RGB'))
+                    print(img_num)
 
             elif label == 'upsample_0':   # flip (x2), dim/bright (x3), color-transform (x2), 4-crops (x5), total: x60
                 self.upsample_1_to_60(l_id)
@@ -349,7 +355,7 @@ class Loader():
         if not os.path.exists(OUTDIR):
             os.mkdir(OUTDIR)
 
-        self.classes = np.zeros(self.total_labels*60, dtype=np.int64))
+        self.classes = np.zeros(self.total_labels*60, dtype=np.int64)
         for l_id, index in self.label_to_index_dict.items():
             self.classes[index] = l_id
         self.classes =  np.outer(self.classes, np.ones(60)).reshape(len(self.classes)*60) # shape (N), each one represents the class for img n.
