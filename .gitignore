@@ -1,3 +1,5 @@
 CSV-files/
 Images/
 .DS_Store
+mini_train/
+.gitignore
