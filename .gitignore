@@ -1,5 +1,6 @@
 CSV-files/
 Images/
 .DS_Store
-mini_train/
-.gitignore
+.ipynb_checkpoints/
+lid_to_imgs.pickle
+TrainDatasets/
