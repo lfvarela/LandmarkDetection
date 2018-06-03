@@ -32,7 +32,7 @@ def declare_model(reg=0):
 
     return Model(input=resnet.input, output=scores)
 
-def compile_and_train(model, data_dir, epochs, checkpoint_dir='', lr=1e-3, use_tfboard=False):
+def compile_and_train(model, data_dir, epochs, checkpoint_dir='', lr=1e-3, steps_per_epoch=None, use_tfboard=False):
     opt = optimizers.Adam(lr=lr)
     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy', gap])
 
@@ -58,7 +58,8 @@ def compile_and_train(model, data_dir, epochs, checkpoint_dir='', lr=1e-3, use_t
         callbacks.append(checkpoint)
 
     # Training
-    hist = model.fit_generator(train_iterator, batch_size=batch_size, epochs=epochs,
+    hist = model.fit_generator(train_iterator, batch_size=batch_size,
+                               steps_per_epoch=steps_per_epoch, epochs=epochs,
                                verbose=1, validation_data=val_iterator, callbacks=callbacks)
 
     return hist
