@@ -20,7 +20,7 @@ OUTDIR = 'TrainDatasets/'
 IMAGES = 'Images/'
 DATASET_DIR = 'Train' # Dont add the '/'
 NUM_DATASETS = 5
-NUM_WORKERS =4
+NUM_WORKERS = 4
 NEW_H = 224
 NEW_W = 224
 
@@ -134,76 +134,81 @@ class Loader():
         Save the image in all five datasets.
         '''
         assert(len(self.lid_to_imgs[l_id]) == 1)
+
+        # Remove files in dir
+        for i in range(NUM_DATASETS):
+            class_dir = os.listdir(os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id)))
+            for img_file in class_dir:
+                os.remove(os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), img_file))
+
         img_id = self.lid_to_imgs[l_id][0]
         img_file = os.path.join(IMAGES, '{}.jpg'.format(img_id))
 
         try:
-            if os.path.isfile(img_file):
 
-                # Transpose
-                with Image.open(img_file) as img:
-                    transpose = img.transpose(Image.FLIP_LEFT_RIGHT)
+            # Transpose
+            with Image.open(img_file) as img:
+                transpose = img.transpose(Image.FLIP_LEFT_RIGHT)
+                for i in range(NUM_DATASETS):
+                    new_file_name = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, ''))
+                    img.save(new_file_name, format='JPEG')
+                    new_file_name_t = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, 't'))
+                    transpose.save(new_file_name_t, format='JPEG')
+
+            # Dim/Bright
+            class_dir = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id))
+            new_imgs = os.listdir(class_dir)
+            for img_file in new_imgs:
+                img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                with Image.open(img_file_path) as img:
+                    dim = img.point(lambda p: p * 0.7)
+                    brighten = img.point(lambda p: p * 1.3)
                     for i in range(NUM_DATASETS):
-                        new_file_name = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, ''))
-                        img.save(new_file_name, format='JPEG')
-                        new_file_name_t = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}_{}.jpg'.format(img_id, 't'))
-                        transpose.save(new_file_name_t, format='JPEG')
+                        new_file_name_d = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'd'))
+                        new_file_name_b = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'b'))
+                        dim.save(new_file_name_d, format='JPEG')
+                        brighten.save(new_file_name_b, format='JPEG')
 
-                # Dim/Bright
-                class_dir = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id))
-                new_imgs = os.listdir(class_dir)
-                for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
-                    with Image.open(img_file_path) as img:
-                        dim = img.point(lambda p: p * 0.7)
-                        brighten = img.point(lambda p: p * 1.3)
+            new_imgs = os.listdir(class_dir)
+            for img_file in new_imgs:
+                img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                with Image.open(img_file_path) as img:
+                    grey = img.convert('L')
+                    for i in range(NUM_DATASETS):
+                        new_file_name_g = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'g'))
+                        grey.save(new_file_name_g, format='JPEG')
+
+            new_imgs = os.listdir(class_dir)
+            for img_file in new_imgs:
+                img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                with Image.open(img_file_path) as img:
+                    w, h = img.size
+                    for j in range(4):
+                        x = random.randint(0, w-NEW_W-1)
+                        y = random.randint(0, h-NEW_H-1)
+                        crop = img.crop((x,y, x+NEW_W, y+NEW_H))
                         for i in range(NUM_DATASETS):
-                            new_file_name_d = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'd'))
-                            new_file_name_b = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'b'))
-                            dim.save(new_file_name_d, format='JPEG')
-                            brighten.save(new_file_name_b, format='JPEG')
-
-                new_imgs = os.listdir(class_dir)
-                for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
-                    with Image.open(img_file_path) as img:
-                        grey = img.convert('L')
-                        for i in range(NUM_DATASETS):
-                            new_file_name_g = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'g'))
-                            grey.save(new_file_name_g, format='JPEG')
-
-                new_imgs = os.listdir(class_dir)
-                for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
-                    with Image.open(img_file_path) as img:
-                        w, h = img.size
-                        for j in range(4):
-                            x = random.randint(0, w-NEW_W-1)
-                            y = random.randint(0, h-NEW_H-1)
-                            crop = img.crop((x,y, x+NEW_W, y+NEW_H))
-                            for i in range(NUM_DATASETS):
-                                new_file_name_c = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}{}.jpg'.format(img_file[:-4], 'c', str(j)))
-                                crop.save(new_file_name_c, format='JPEG')
-
-                # Resize them
-                new_imgs = os.listdir(class_dir)
-                for img_file in new_imgs:
-                    img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
-                    with Image.open(img_file_path) as img:
-                        resize = img.resize((NEW_H,NEW_W))
-                        for i in range(NUM_DATASETS):
-                            new_file_name_R = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'R'))
+                            new_file_name_c = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}{}.jpg'.format(img_file[:-4], 'c', str(j)))
                             crop.save(new_file_name_c, format='JPEG')
 
-                new_imgs = os.listdir(class_dir)
-                assert(len(new_imgs) == 60)
-            else:
-                #print('does not exists')
-                return
+            # Resize them
+            new_imgs = os.listdir(class_dir)
+            for img_file in new_imgs:
+                img_file_path = os.path.join(OUTDIR, DATASET_DIR + str(0), str(l_id), img_file)
+                with Image.open(img_file_path) as img:
+                    resize = img.resize((NEW_H,NEW_W))
+                    for i in range(NUM_DATASETS):
+                        new_file_name_R = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), '{}{}.jpg'.format(img_file[:-4], 'R'))
+                        to_remove_file_path = os.path.join(OUTDIR, DATASET_DIR + str(i), str(l_id), img_file)
+                        os.remove(to_remove_file_path)
+                        resize.save(new_file_name_R, format='JPEG')
+
+            new_imgs = os.listdir(class_dir)
+            assert(len(new_imgs) == 60)
+
         except Exception as e:
             print('Error with PIL')
             print(traceback.format_exc())
-
 
     def process_label(self, img_label):
         '''

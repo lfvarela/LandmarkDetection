@@ -17,5 +17,4 @@ for i in tqdm.tqdm(range(NUM_DATASETS)):
             with Image.open(img_file) as image:
                 w, h = image.size
                 assert(w == 224 and h == 224)
-
 print('DONE')
