@@ -32,15 +32,18 @@ def declare_model(reg=0):
 
     return Model(input=resnet.input, output=scores)
 
-def compile_and_train(model, data_dir, epochs, checkpoint_dir='', lr=1e-3, steps_per_epoch=None, use_tfboard=False):
+def compile_and_train(model, data_dir, epochs, mean, std, checkpoint_dir='', lr=1e-3, steps_per_epoch=None, use_tfboard=False):
     opt = optimizers.Adam(lr=lr)
     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy', gap])
 
     # Data generators
-    generator = ImageDataGenerator(rescale=1/255, validation_split=0.15)
+    generator = ImageDataGenerator(validation_split=0.15)
 
     train_iterator = generator.flow_from_directory(data_dir, class_mode='categorical', batch_size=batch_size, subset='training')
     val_iterator = generator.flow_from_directory(data_dir, class_mode='categorical', batch_size=batch_size, subset='validation')
+
+    train_iterator = img_gen_normalized(train_iterator, normalize_and_rescale, mean, std)
+    val_iterator = img_gen_normalized(val_iterator, normalize_and_rescale, mean, std)
 
     # Note: checkout the LearningRateScheduler callback.
     # Callbacks
