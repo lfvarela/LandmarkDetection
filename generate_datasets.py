@@ -25,6 +25,9 @@ NEW_H = 224
 NEW_W = 224
 
 class Loader():
+    '''
+    Generates NUM_DATASETS from Images, organized by class folder, with 60 images per class.
+    '''
     def __init__(self):
         self.id_to_lid = None     # Maps { img_id: l_id }
         self.lid_to_imgs = None   # Maps { l_id: [ img_ids with l_id ]}
