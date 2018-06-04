@@ -76,6 +76,6 @@ if __name__ == '__main__':
     global mean
     mean = mean_sum / n
     process_compute_threaded(add_one_std, l2)
-    std = sum_std / n
+    std = np.sqrt(sum_std / n)
     np.save('mean_mini_train.npy', mean)
     np.save('std_mini_train.npy', std)
