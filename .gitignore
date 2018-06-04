@@ -6,3 +6,6 @@ lid_to_imgs.pickle
 TrainDatasets/
 .idea
 mini-train/
+ImagesInDirs/
+mean_mini_train.npy
+std_mini_train.npy
