@@ -4,3 +4,5 @@ Images/
 .ipynb_checkpoints/
 lid_to_imgs.pickle
 TrainDatasets/
+.idea
+mini-train/
