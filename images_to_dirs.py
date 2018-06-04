@@ -3,12 +3,13 @@ import shutil
 import tqdm
 import pickle
 import csv
+import threading
 
 
 CSV_FILE = 'CSV-files/train.csv'
 OUTDIR = 'ImagesInDirs/'
 IMAGES = 'Images/'
-
+NUM_WORKERS = 8
 
 class Loader():
     def __init__(self):
@@ -57,18 +58,6 @@ class Loader():
                 if img_file in downloaded_imgs:
                     self.id_to_lid[img_id] = row['landmark_id']
 
-    def make_new_dir(self):
-        print('Copying images.')
-        downloaded_imgs = os.listdir(IMAGES)
-        for img in tqdm.tqdm(downloaded_imgs):
-            img_path = os.path.join(IMAGES, img)
-            img_id = img[:-4]
-            l_id = self.id_to_lid[img_id]
-            if not os.path.exists(os.path.join(OUTDIR, str(l_id))):
-                os.mkdir(os.path.join(OUTDIR, str(l_id)))
-            dest_path = os.path.join(OUTDIR, str(l_id), img)
-            if not os.path.isfile(dest_path):
-                shutil.copyfile(img_path, dest_path)
 
     def assert_num_files(self):
         print('Making sure all files were copied.')
@@ -79,6 +68,58 @@ class Loader():
             imgs_in_class = os.listdir(class_dir_path)
             total_copies += len(imgs_in_class)
         assert(self.total_images == total_copies)
+
+    def copy_images(self):
+
+        def thread_target(t_id, image_list):
+
+            global c
+            global num_done
+            while True:
+                c.acquire()
+                remaining = len(image_list)
+                if remaining % 10000 == 0:
+                    print('Images remaining: {}'.format(remaining))
+                if remaining == 0:
+                    num_done += 1
+                    if num_done == NUM_WORKERS:
+                        c.notify_all()
+                    c.release()
+                    return
+
+                img = image_list.pop()
+                c.release()
+                img_path = os.path.join(IMAGES, img)
+                img_id = img[:-4]
+                l_id = self.id_to_lid[img_id]
+                c.acquire()
+                if not os.path.exists(os.path.join(OUTDIR, str(l_id))):
+                    os.mkdir(os.path.join(OUTDIR, str(l_id)))
+                c.release()
+                dest_path = os.path.join(OUTDIR, str(l_id), img)
+                if not os.path.isfile(dest_path):
+                    shutil.copyfile(img_path, dest_path)
+
+        class_dirs = os.listdir(IMAGES)
+        print(len(class_dirs))
+
+        global c
+        c = threading.Condition()
+        c.acquire()
+
+        # Start and join threads
+        threads = [ threading.Thread(target=thread_target, args=(str(i), class_dirs)) for i in range(NUM_WORKERS) ]
+
+        global num_done
+        num_done = 0
+        for t_id, t in enumerate(threads):
+            t.start()
+        c.wait()
+        c.release()
+        for t_id, t in enumerate(threads):
+            threads[t_id].join()
+
+        print('DONE')
 
 
 
@@ -91,7 +132,7 @@ class Loader():
         # Load pickle file: lid_to_imgs (maps { l_lid to list of images with that label }
         self.load_lid_to_imgs()
         self.generate_id_to_lid()
-        self.make_new_dir()
+        self.copy_images()
         self.assert_num_files()
         print('DONE!')
 
