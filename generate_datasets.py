@@ -16,7 +16,7 @@ import threading
 
 
 CSV_FILE = 'CSV-files/train.csv'
-OUTDIR = 'TrainDatasets/'
+# OUTDIR = 'TrainDatasets/'
 IMAGES = 'Images/'
 DATASET_DIR = 'Train' # Dont add the '/'
 NUM_DATASETS = 5
