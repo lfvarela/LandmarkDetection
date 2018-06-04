@@ -67,9 +67,11 @@ class Loader():
             if not os.path.exists(os.path.join(OUTDIR, str(l_id))):
                 os.mkdir(os.path.join(OUTDIR, str(l_id)))
             dest_path = os.path.join(OUTDIR, str(l_id), img)
-            shutil.copyfile(img_path, dest_path)
+            if not os.path.isfile(dest_path):
+                shutil.copyfile(img_path, dest_path)
 
     def assert_num_files(self):
+        print('Making sure all files were copied.')
         total_copies = 0
         class_dirs = os.listdir(OUTDIR)
         for class_dir in class_dirs:
@@ -91,6 +93,7 @@ class Loader():
         self.generate_id_to_lid()
         self.make_new_dir()
         self.assert_num_files()
+        print('DONE!')
 
 
 def main():
