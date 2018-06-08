@@ -9,3 +9,12 @@ mini-train/
 ImagesInDirs/
 mean_mini_train.npy
 std_mini_train.npy
+__pycache__/
+TestDataset/
+ReducedTrainDatasets/
+ReducedValidationDataset/
+checkpoints/
+logs*
+models/
+preds/
+

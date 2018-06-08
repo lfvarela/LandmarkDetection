@@ -17,8 +17,8 @@ from PIL import Image
 from io import BytesIO
 import tqdm
 
-TARGET_SIZE = 250  # image resolution to be stored
-IMG_QUALITY = 75  # JPEG quality
+TARGET_SIZE = 224  # image resolution to be stored
+IMG_QUALITY = 90  # JPEG quality
 NUM_WORKERS = 8  # Num of CPUs
 
 

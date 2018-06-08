@@ -4,16 +4,16 @@ from scipy.misc import imread
 import threading
 
 NUM_WORKERS = 8
-data_dir = 'mini-train'
+data_dir = 'TrainDatasets/Train0'
 
 def add_one_mean(img):
     global mean_sum
-    mean_sum += imread(img)
+    mean_sum += imread(img, mode='RGB')
 
 def add_one_std(img):
     global sum_std
     global mean
-    sum_std += (imread(img) - mean)**2
+    sum_std += (imread(img,mode='RGB') - mean)**2
 
 def gen_path_list():
     l = []
@@ -77,5 +77,5 @@ if __name__ == '__main__':
     mean = mean_sum / n
     process_compute_threaded(add_one_std, l2)
     std = np.sqrt(sum_std / n)
-    np.save('mean_mini_train.npy', mean)
-    np.save('std_mini_train.npy', std)
+    np.save('mean_{}.npy'.format(data_dir), mean)
+    np.save('std_{}.npy'.format(data_dir), std)
