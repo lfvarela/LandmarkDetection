@@ -18,6 +18,8 @@ generate_datasets2.py: Does preprocessing for our "final approach"
 
 images_to_dirs.py: Restructures the dataset by class labels
 
+resize.py: Used to resize images
+
 **Notebooks Directory**: 
 
 DataGenerator.py: class used to load data into our training model using multiprocessing and multiple GPUs. 
