@@ -30,9 +30,8 @@ ensemble.ipynb: Used for the ensemble of multiple models.
 
 evaluate.ipynb: Used to evaluate a model using the test dataset. 
 
-new_train.ipynb: Model for training used on our "final approach".
+new_train.ipynb: Model for training.
 
-train.ipynb: Model for training used on our "first approach".
 
 **Zip Files Directory**: Includes zip files from Kaggle. 
 
